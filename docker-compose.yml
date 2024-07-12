@@ -1,0 +1,22 @@
+version: '3.7'
+networks:
+  default:
+    name: redis
+    external: false
+services:
+  redis:
+    image: redis:alpine
+    container_name: redis
+    networks:
+      - default
+    ports:
+      - "6379:6379"
+  search-api:
+    image: search-api:latest
+    container_name: search-api
+    networks:
+      - default
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
