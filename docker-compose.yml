@@ -11,12 +11,3 @@ services:
       - default
     ports:
       - "6379:6379"
-  search-api:
-    image: search-api:latest
-    container_name: search-api
-    networks:
-      - default
-    ports:
-      - "8080:8080"
-    depends_on:
-      - redis

@@ -3,7 +3,7 @@ package documents
 import (
 	"context"
 	"errors"
-	"time"
+	"strings"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -25,11 +25,7 @@ func New(redis_client *redis.Client) *Documents {
 }
 
 func (d *Documents) GetDocByID(ctx context.Context, documentID string) (*Document, error) {
-	currCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
-
-	defer cancel()
-
-	val, err := d.redis_client.Get(currCtx, documentID).Result()
+	val, err := d.redis_client.Get(ctx, documentID).Result()
 	if err != nil {
 		return nil, errors.New("document not found")
 	}
@@ -43,40 +39,68 @@ func (d *Documents) GetDocByID(ctx context.Context, documentID string) (*Documen
 }
 
 func (d *Documents) SetDoc(ctx context.Context, documentID, text string) error {
-	currCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	// we take into consideration that no parsing is necessary to
+	// extract the words from the text
+	textList := strings.Split(text, " ")
+	_, fail := d.redis_client.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		for _, word := range textList {
+			// we are only interested in words that are longer than 3 characters
+			// we actually omit articles and propositions, not worth indexing
+			if len(word) > 3 {
+				// we are assuming that the word is valid
+				word = strings.ToLower(word)
+				pipe.SAdd(ctx, word, documentID)
+			}
+		}
+		return nil
+	})
 
-	defer cancel()
+	if fail != nil {
+		return errors.New("could not set document, error while indexing words")
+	}
 
-	err := d.redis_client.Set(currCtx, documentID, text, 0).Err()
+	err := d.redis_client.Set(ctx, documentID, text, 0).Err()
 	if err != nil {
-		return errors.New("could not set document")
+		return errors.New("could not set document, error while saving document")
 	}
 
 	return nil
 }
 
 func (d *Documents) Search(ctx context.Context, query string) ([]Document, error) {
-	currCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	query = strings.ToLower(query)
+	words := strings.Split(query, ",")
 
-	defer cancel()
+	docsIds := make(map[string]int)
+	var documents []Document
 
-	keys, err := d.redis_client.Keys(currCtx, "*").Result()
+	// we are going to query redis to get set membership for all the words
+	// in the query, then we are going to intersect the results and return
+	// the documents that contain all the words in the query
+	cmds, err := d.redis_client.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		for _, word := range words {
+			word = strings.ToLower(word)
+			pipe.SMembers(ctx, word)
+		}
+		return nil
+	})
+
 	if err != nil {
-		return nil, errors.New("could not search documents")
+		return nil, errors.New("could not search documents, error while querying words")
 	}
 
-	var documents []Document
-	for _, key := range keys {
-		val, err := d.redis_client.Get(currCtx, key).Result()
-		if err != nil {
-			return nil, errors.New("could not get document")
+	for _, cmd := range cmds {
+		for _, docID := range cmd.(*redis.StringSliceCmd).Val() {
+			docsIds[docID]++
 		}
+	}
 
-		documents = append(documents, Document{
-			ID:           key,
-			Text:         val,
-			MatchedWords: []string{},
-		})
+	for docID := range docsIds {
+		doc, err := d.GetDocByID(ctx, docID)
+		if err != nil {
+			return nil, errors.New("could not search documents, error while getting document")
+		}
+		documents = append(documents, *doc)
 	}
 
 	return documents, nil

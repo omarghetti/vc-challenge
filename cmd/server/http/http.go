@@ -37,7 +37,7 @@ func NewService(api api.Server, config *util.Config, logger *slog.Logger) *HTTP 
 		r.Get("/health", h.Health)
 		r.Get("/document/{documentID}", h.GetDocumentByID)
 		r.Post("/document/{documentID}", h.SetDocument)
-		r.Post("/search", h.Search)
+		r.Get("/search", h.Search)
 		r.Delete("/document/{documentID}", h.DeleteDocument)
 	})
 

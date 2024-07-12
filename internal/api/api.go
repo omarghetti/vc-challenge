@@ -2,8 +2,13 @@ package api
 
 import (
 	"context"
+	"time"
 
 	"github.com/omarghetti/vc-challenge/v2/internal/documents"
+)
+
+var (
+	now = time.Now()
 )
 
 type Server interface {
@@ -29,19 +34,26 @@ func NewServer(documents *documents.Documents) Server {
 
 func (a *API) Health(env string) (map[string]any, error) {
 	return map[string]any{
-		"env":    env,
-		"status": "ok",
+		"env":          env,
+		"status":       "ok",
+		"current_time": now.String(),
 	}, nil
 }
 
 func (a *API) GetDocByID(ctx context.Context, documentID string) (*documents.Document, error) {
-	return a.documents.GetDocByID(ctx, documentID)
+	newCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	defer cancel()
+	return a.documents.GetDocByID(newCtx, documentID)
 }
 
 func (a *API) SetDoc(ctx context.Context, documentID, text string) error {
-	return a.documents.SetDoc(ctx, documentID, text)
+	newCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	defer cancel()
+	return a.documents.SetDoc(newCtx, documentID, text)
 }
 
 func (a *API) Search(ctx context.Context, query string) ([]documents.Document, error) {
-	return a.documents.Search(ctx, query)
+	newCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	defer cancel()
+	return a.documents.Search(newCtx, query)
 }
