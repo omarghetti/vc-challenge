@@ -14,7 +14,8 @@ var (
 type Server interface {
 	GetDocByID(ctx context.Context, documentID string) (*documents.Document, error)
 	SetDoc(ctx context.Context, documentID, text string) error
-	Search(ctx context.Context, query string) ([]documents.Document, error)
+	Search(ctx context.Context, query string) (documents.SearchResult, error)
+	DeleteDoc(ctx context.Context, documentID string) error
 	Health(env string) (map[string]any, error)
 }
 
@@ -52,8 +53,14 @@ func (a *API) SetDoc(ctx context.Context, documentID, text string) error {
 	return a.documents.SetDoc(newCtx, documentID, text)
 }
 
-func (a *API) Search(ctx context.Context, query string) ([]documents.Document, error) {
+func (a *API) Search(ctx context.Context, query string) (documents.SearchResult, error) {
 	newCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
 	defer cancel()
 	return a.documents.Search(newCtx, query)
+}
+
+func (a *API) DeleteDoc(ctx context.Context, documentID string) error {
+	newCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	defer cancel()
+	return a.documents.DeleteDoc(newCtx, documentID)
 }

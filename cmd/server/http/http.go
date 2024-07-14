@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/omarghetti/vc-challenge/v2/internal/api"
 	"github.com/omarghetti/vc-challenge/v2/internal/util"
 )
@@ -31,6 +32,9 @@ func NewService(api api.Server, config *util.Config, logger *slog.Logger) *HTTP 
 		apis: api,
 		env:  config.Environment,
 	}
+
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	r.Route("/api/v1", func(r chi.Router) {
 

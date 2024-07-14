@@ -69,5 +69,13 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) DeleteDocument(w http.ResponseWriter, r *http.Request) {
-	// pass
+	documentID := chi.URLParam(r, "documentID")
+
+	err := h.apis.DeleteDoc(r.Context(), documentID)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 }
