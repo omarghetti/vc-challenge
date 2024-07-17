@@ -35,5 +35,6 @@ To run Tests, launch:
 At the moment, there is not a proper ranking in the current API.
 
 One possibility would be to rank the results based on the frequency of the searched terms inside the indexed document
+using one of the SOTA algoritms (BM25, TF-IDF, etc)
 
 
