@@ -10,8 +10,9 @@ import (
 )
 
 type SearchResult struct {
-	Query string     `json:"query"`
-	Docs  []Document `json:"docs"`
+	Query      string     `json:"query"`
+	NumResults int        `json:"num_results"`
+	Docs       []Document `json:"docs"`
 }
 
 type Document struct {
@@ -77,8 +78,9 @@ func (d *Documents) Search(ctx context.Context, query string) (SearchResult, err
 	}
 
 	sr := SearchResult{
-		Query: query,
-		Docs:  result,
+		Query:      query,
+		NumResults: len(result),
+		Docs:       result,
 	}
 
 	return sr, nil

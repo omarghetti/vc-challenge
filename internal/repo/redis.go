@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/omarghetti/vc-challenge/v2/internal/util"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -37,10 +38,11 @@ func (r *RedisStorer) SetNewDoc(ctx context.Context, key, value string) error {
 	words := strings.Split(value, " ")
 	_, fail := r.redis_client.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 		for _, word := range words {
-			if len(word) > 3 {
-				word = strings.ToLower(word)
-				pipe.SAdd(ctx, word, key)
+			if word == "" || util.IsStopword(word) {
+				continue
 			}
+			word = strings.ToLower(word)
+			pipe.SAdd(ctx, word, key)
 		}
 		return nil
 	})
@@ -75,10 +77,11 @@ func (r *RedisStorer) DelDoc(ctx context.Context, key string) error {
 	words := strings.Split(val, " ")
 	_, fail := r.redis_client.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 		for _, word := range words {
-			if len(word) > 3 {
-				word = strings.ToLower(word)
-				pipe.SRem(ctx, word, key)
+			if word == "" || util.IsStopword(word) {
+				continue
 			}
+			word = strings.ToLower(word)
+			pipe.SRem(ctx, word, key)
 		}
 		return nil
 	})
