@@ -54,7 +54,7 @@ func (a *API) SetDoc(ctx context.Context, documentID, text string) error {
 }
 
 func (a *API) Search(ctx context.Context, query string) (documents.SearchResult, error) {
-	newCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	newCtx, cancel := context.WithTimeout(ctx, 1000*time.Millisecond)
 	defer cancel()
 	return a.documents.Search(newCtx, query)
 }

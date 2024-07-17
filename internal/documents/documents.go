@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 
 	"github.com/omarghetti/vc-challenge/v2/internal/repo"
 )
@@ -53,6 +54,7 @@ func (d *Documents) SetDoc(ctx context.Context, documentID, text string) error {
 }
 
 func (d *Documents) Search(ctx context.Context, query string) (SearchResult, error) {
+	var wg sync.WaitGroup
 	var result []Document
 	query = strings.ToLower(query)
 	documents, err := d.repository.SearchDocs(ctx, query)
@@ -62,11 +64,16 @@ func (d *Documents) Search(ctx context.Context, query string) (SearchResult, err
 	}
 
 	for _, doc := range documents {
-		text, err := d.GetDocByID(ctx, doc)
-		if err != nil {
-			continue
-		}
-		result = append(result, *text)
+		wg.Add(1)
+		go func(doc string) {
+			defer wg.Done()
+			text, err := d.GetDocByID(ctx, doc)
+			if err != nil {
+				return
+			}
+			result = append(result, *text)
+		}(doc)
+		wg.Wait()
 	}
 
 	sr := SearchResult{
