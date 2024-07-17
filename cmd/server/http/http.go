@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -13,27 +12,23 @@ import (
 
 type HTTP struct {
 	server *http.Server
-	logger *slog.Logger
 }
 
 func (h *HTTP) Start() {
-	h.logger.Info("HTTP server started")
 	h.server.ListenAndServe()
 }
 
 func (h *HTTP) Shutdown() {
-	h.logger.Info("HTTP server stopped")
 	h.server.Shutdown(context.TODO())
 }
 
-func NewService(api api.Server, config *util.Config, logger *slog.Logger) *HTTP {
+func NewService(api api.Server, config *util.Config) *HTTP {
 	r := chi.NewRouter()
 	h := &Handlers{
 		apis: api,
 		env:  config.Environment,
 	}
 
-	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -52,6 +47,5 @@ func NewService(api api.Server, config *util.Config, logger *slog.Logger) *HTTP 
 
 	return &HTTP{
 		server: server,
-		logger: logger,
 	}
 }

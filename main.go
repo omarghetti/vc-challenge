@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"log/slog"
-	"os"
 
 	"github.com/omarghetti/vc-challenge/v2/cmd/server/http"
 	"github.com/omarghetti/vc-challenge/v2/internal/api"
@@ -15,10 +13,6 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-
 	config, err := util.NewConfig()
 	if err != nil {
 		log.Fatalf("Error loading configuration file")
@@ -43,7 +37,7 @@ func main() {
 	api := api.NewServer(documents)
 
 	// Start the HTTP server
-	http_service := http.NewService(api, &config, logger)
+	http_service := http.NewService(api, &config)
 
 	defer http_service.Shutdown()
 
